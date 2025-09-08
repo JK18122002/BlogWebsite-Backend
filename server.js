@@ -7,6 +7,7 @@ import commentRoute from "./routes/comment.route.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 
 dotenv.config();
 const app = express();
@@ -15,10 +16,14 @@ const __dirname = path.resolve();
 
 // Middleware
 app.use(cookieParser());
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-}));
+
+// ✅ Allow all origins
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 
 // For non-file requests
 app.use(express.json());
@@ -29,11 +34,14 @@ app.use("/api/v1/user", userRoute);
 app.use("/api/v1/blog", blogRoute);
 app.use("/api/v1/comment", commentRoute);
 
-// Serve frontend
-app.use(express.static(path.join(__dirname, "frontend/dist")));
-app.get("/:path(*)", (_, res) => {
-  res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
-});
+// ✅ Serve frontend only if it exists
+const frontendPath = path.join(__dirname, "frontend", "dist");
+if (fs.existsSync(frontendPath)) {
+  app.use(express.static(frontendPath));
+  app.get("*", (_, res) => {
+    res.sendFile(path.resolve(frontendPath, "index.html"));
+  });
+}
 
 // Start server
 app.listen(PORT, () => {
